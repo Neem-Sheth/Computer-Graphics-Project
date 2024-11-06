@@ -1,6 +1,7 @@
-from tkinter import Tk, Canvas, Button, filedialog
+from tkinter import Tk, Canvas, Button, Entry, Scale, Label, filedialog, HORIZONTAL
 from PIL import Image, ImageDraw, ImageTk
 
+# Load the image function
 def load_image():
     global img, original_img
     file_path = filedialog.askopenfilename()
@@ -9,17 +10,22 @@ def load_image():
         original_img = img.copy()
         display_image(img)
 
+# Display image on the canvas
 def display_image(image):
     global img_tk
     img_tk = ImageTk.PhotoImage(image)
     canvas.create_image(250, 250, image=img_tk)
 
+# Reset the image to original
 def reset_image():
     global img
     img = original_img.copy()
     display_image(img)
 
-def translate(dx, dy):
+# Translation
+def translate():
+    dx = int(translate_x_entry.get())
+    dy = int(translate_y_entry.get())
     global img
     width, height = img.size
     new_img = Image.new('RGB', (width, height), 'white')
@@ -30,7 +36,9 @@ def translate(dx, dy):
     img = new_img
     display_image(img)
 
-def rotate(angle):
+# Rotation
+def rotate():
+    angle = int(rotate_entry.get())
     import math
     global img
     width, height = img.size
@@ -49,7 +57,10 @@ def rotate(angle):
     img = new_img
     display_image(img)
 
-def scale(sx, sy):
+# Scaling
+def scale():
+    sx = scale_x_slider.get()
+    sy = scale_y_slider.get()
     global img
     width, height = img.size
     new_width = int(width * sx)
@@ -66,7 +77,9 @@ def scale(sx, sy):
     img = new_img
     display_image(img)
 
-def reflect(axis='horizontal'):
+# Reflection
+def reflect():
+    axis = reflect_axis_entry.get().lower()
     global img
     width, height = img.size
     new_img = Image.new('RGB', (width, height), 'white')
@@ -83,7 +96,10 @@ def reflect(axis='horizontal'):
     img = new_img
     display_image(img)
 
-def shear(shear_x=0, shear_y=0):
+# Shear
+def shear():
+    shear_x = shear_x_slider.get()
+    shear_y = shear_y_slider.get()
     global img
     width, height = img.size
     new_img = Image.new('RGB', (width, height), 'white')
@@ -98,9 +114,14 @@ def shear(shear_x=0, shear_y=0):
     img = new_img
     display_image(img)
 
-def clip(x_min, y_min, x_max, y_max):
+# Clipping
+def clip():
+    x_min = int(clip_x_min_entry.get())
+    y_min = int(clip_y_min_entry.get())
+    x_max = int(clip_x_max_entry.get())
+    y_max = int(clip_y_max_entry.get())
     global img
-    new_img = Image.new('RGB', (img.size), 'white')
+    new_img = Image.new('RGB', img.size, 'white')
     draw = ImageDraw.Draw(new_img)
 
     for x in range(img.width):
@@ -113,36 +134,78 @@ def clip(x_min, y_min, x_max, y_max):
     img = new_img
     display_image(img)
 
-def flood_fill(x, y, new_color):
-    global img
-    original_color = img.getpixel((x, y))
-    width, height = img.size
-    stack = [(x, y)]
-
-    while stack:
-        x, y = stack.pop()
-        if img.getpixel((x, y)) == original_color:
-            img.putpixel((x, y), new_color)
-            stack.extend([(nx, ny) for nx, ny in [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
-                          if 0 <= nx < width and 0 <= ny < height])
-
-    display_image(img)
-
 # Initialize GUI
 root = Tk()
 root.title("Interactive Image Transformations")
 
 canvas = Canvas(root, width=500, height=500, bg='white')
-canvas.pack()
+canvas.grid(row=0, column=0, columnspan=6)
 
-Button(root, text="Load Image", command=load_image).pack(side='left')
-Button(root, text="Reset", command=reset_image).pack(side='left')
-Button(root, text="Translate", command=lambda: translate(50, 30)).pack(side='left')
-Button(root, text="Rotate", command=lambda: rotate(45)).pack(side='left')
-Button(root, text="Scale", command=lambda: scale(1.5, 1.5)).pack(side='left')
-Button(root, text="Reflect", command=lambda: reflect('horizontal')).pack(side='left')
-Button(root, text="Shear", command=lambda: shear(0.2, 0)).pack(side='left')
-Button(root, text="Clip", command=lambda: clip(100, 100, 400, 400)).pack(side='left')
-Button(root, text="Flood Fill", command=lambda: flood_fill(250, 250, (255, 0, 0))).pack(side='left')
+Button(root, text="Load Image", command=load_image).grid(row=1, column=0)
+Button(root, text="Reset", command=reset_image).grid(row=1, column=1)
+
+# Translate Controls
+Label(root, text="Translate X").grid(row=2, column=0)
+translate_x_entry = Entry(root)
+translate_x_entry.grid(row=2, column=1)
+
+Label(root, text="Translate Y").grid(row=2, column=2)
+translate_y_entry = Entry(root)
+translate_y_entry.grid(row=2, column=3)
+
+Button(root, text="Translate", command=translate).grid(row=2, column=4)
+
+# Rotate Controls
+Label(root, text="Rotate Angle").grid(row=3, column=0)
+rotate_entry = Entry(root)
+rotate_entry.grid(row=3, column=1)
+Button(root, text="Rotate", command=rotate).grid(row=3, column=4)
+
+# Scale Controls
+Label(root, text="Scale X").grid(row=4, column=0)
+scale_x_slider = Scale(root, from_=0.1, to=3.0, orient=HORIZONTAL, resolution=0.1)
+scale_x_slider.grid(row=4, column=1)
+
+Label(root, text="Scale Y").grid(row=4, column=2)
+scale_y_slider = Scale(root, from_=0.1, to=3.0, orient=HORIZONTAL, resolution=0.1)
+scale_y_slider.grid(row=4, column=3)
+
+Button(root, text="Scale", command=scale).grid(row=4, column=4)
+
+# Reflect Controls
+Label(root, text="Reflect Axis (horizontal/vertical)").grid(row=5, column=0)
+reflect_axis_entry = Entry(root)
+reflect_axis_entry.grid(row=5, column=1)
+Button(root, text="Reflect", command=reflect).grid(row=5, column=4)
+
+# Shear Controls
+Label(root, text="Shear X").grid(row=6, column=0)
+shear_x_slider = Scale(root, from_=-1.0, to=1.0, orient=HORIZONTAL, resolution=0.1)
+shear_x_slider.grid(row=6, column=1)
+
+Label(root, text="Shear Y").grid(row=6, column=2)
+shear_y_slider = Scale(root, from_=-1.0, to=1.0, orient=HORIZONTAL, resolution=0.1)
+shear_y_slider.grid(row=6, column=3)
+
+Button(root, text="Shear", command=shear).grid(row=6, column=4)
+
+# Clip Controls
+Label(root, text="Clip X Min").grid(row=7, column=0)
+clip_x_min_entry = Entry(root)
+clip_x_min_entry.grid(row=7, column=1)
+
+Label(root, text="Clip Y Min").grid(row=7, column=2)
+clip_y_min_entry = Entry(root)
+clip_y_min_entry.grid(row=7, column=3)
+
+Label(root, text="Clip X Max").grid(row=8, column=0)
+clip_x_max_entry = Entry(root)
+clip_x_max_entry.grid(row=8, column=1)
+
+Label(root, text="Clip Y Max").grid(row=8, column=2)
+clip_y_max_entry = Entry(root)
+clip_y_max_entry.grid(row=8, column=3)
+
+Button(root, text="Clip", command=clip).grid(row=8, column=4)
 
 root.mainloop()
