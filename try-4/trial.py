@@ -1,4 +1,4 @@
-from tkinter import Tk, Canvas, Button, Entry, Scale, Label, filedialog, HORIZONTAL
+from tkinter import Tk, Canvas, Button, Entry, Scale, Label, filedialog, HORIZONTAL, Frame
 from PIL import Image, ImageDraw, ImageTk
 
 # Load the image function
@@ -134,78 +134,155 @@ def clip():
     img = new_img
     display_image(img)
 
+def flood_fill():
+    try:
+        xmin = int(flood_fill_xmin_entry.get())
+        ymin = int(flood_fill_ymin_entry.get())
+        xmax = int(flood_fill_xmax_entry.get())
+        ymax = int(flood_fill_ymax_entry.get())
+        fill_color_input = flood_fill_color_entry.get().strip()
+        
+        # Remove any parentheses and whitespace
+        fill_color = tuple(map(int, fill_color_input.replace('(', '').replace(')', '').split(',')))
+
+        if len(fill_color) != 3 or any(c < 0 or c > 255 for c in fill_color):
+            raise ValueError("Fill color must be three integers between 0 and 255.")
+
+        global img
+        width, height = img.size
+        draw = ImageDraw.Draw(img)
+
+        # Ensure bounds are within the image dimensions
+        xmin = max(0, min(xmin, width - 1))
+        ymin = max(0, min(ymin, height - 1))
+        xmax = max(0, min(xmax, width - 1))
+        ymax = max(0, min(ymax, height - 1))
+
+        # Apply the color filter (blending original and fill_color)
+        for x in range(xmin, xmax + 1):
+            for y in range(ymin, ymax + 1):
+                original_color = img.getpixel((x, y))
+                
+                # Blend original color with the fill color (simple linear interpolation)
+                blended_color = tuple(
+                    int(original_color[i] * 0.5 + fill_color[i] * 0.5)  # 50% blend
+                    for i in range(3)
+                )
+                
+                # Set the new color (blended color)
+                draw.point((x, y), fill=blended_color)
+
+        display_image(img)  # Update the image display
+    except ValueError as e:
+        print(f"Error: {e}")
+
 # Initialize GUI
 root = Tk()
 root.title("Interactive Image Transformations")
+root.geometry('1200x600')  # Adjust window size to fit laptop screen
 
-canvas = Canvas(root, width=500, height=500, bg='white')
-canvas.grid(row=0, column=0, columnspan=6)
+# Frame for Image (left side)
+image_frame = Frame(root, width=600, height=600, bg='gray')
+image_frame.grid(row=0, column=0, rowspan=12)
 
-Button(root, text="Load Image", command=load_image).grid(row=1, column=0)
-Button(root, text="Reset", command=reset_image).grid(row=1, column=1)
+# Canvas for Image Display
+canvas = Canvas(image_frame, width=500, height=500, bg='white')
+canvas.grid(row=0, column=0, padx=20, pady=20)
+
+# Controls Frame (right side)
+controls_frame = Frame(root, width=600, height=600, bg='lightgray')
+controls_frame.grid(row=0, column=1, rowspan=12, padx=20, pady=20)
+
+# Load Image and Reset Buttons
+Button(controls_frame, text="Load Image", command=load_image).grid(row=1, column=0, pady=5)
+Button(controls_frame, text="Reset", command=reset_image).grid(row=1, column=1, pady=5)
 
 # Translate Controls
-Label(root, text="Translate X").grid(row=2, column=0)
-translate_x_entry = Entry(root)
+Label(controls_frame, text="Translate X").grid(row=2, column=0)
+translate_x_entry = Entry(controls_frame)
 translate_x_entry.grid(row=2, column=1)
 
-Label(root, text="Translate Y").grid(row=2, column=2)
-translate_y_entry = Entry(root)
+Label(controls_frame, text="Translate Y").grid(row=2, column=2)
+translate_y_entry = Entry(controls_frame)
 translate_y_entry.grid(row=2, column=3)
 
-Button(root, text="Translate", command=translate).grid(row=2, column=4)
+Button(controls_frame, text="Translate", command=translate).grid(row=2, column=4)
 
 # Rotate Controls
-Label(root, text="Rotate Angle").grid(row=3, column=0)
-rotate_entry = Entry(root)
+Label(controls_frame, text="Rotate Angle").grid(row=3, column=0)
+rotate_entry = Entry(controls_frame)
 rotate_entry.grid(row=3, column=1)
-Button(root, text="Rotate", command=rotate).grid(row=3, column=4)
+Button(controls_frame, text="Rotate", command=rotate).grid(row=3, column=4)
 
 # Scale Controls
-Label(root, text="Scale X").grid(row=4, column=0)
-scale_x_slider = Scale(root, from_=0.1, to=3.0, orient=HORIZONTAL, resolution=0.1)
+Label(controls_frame, text="Scale X").grid(row=4, column=0)
+scale_x_slider = Scale(controls_frame, from_=0.1, to=3.0, orient=HORIZONTAL, resolution=0.1)
 scale_x_slider.grid(row=4, column=1)
 
-Label(root, text="Scale Y").grid(row=4, column=2)
-scale_y_slider = Scale(root, from_=0.1, to=3.0, orient=HORIZONTAL, resolution=0.1)
+Label(controls_frame, text="Scale Y").grid(row=4, column=2)
+scale_y_slider = Scale(controls_frame, from_=0.1, to=3.0, orient=HORIZONTAL, resolution=0.1)
 scale_y_slider.grid(row=4, column=3)
 
-Button(root, text="Scale", command=scale).grid(row=4, column=4)
+Button(controls_frame, text="Scale", command=scale).grid(row=4, column=4)
 
 # Reflect Controls
-Label(root, text="Reflect Axis (horizontal/vertical)").grid(row=5, column=0)
-reflect_axis_entry = Entry(root)
+Label(controls_frame, text="Reflect Axis (horizontal/vertical)").grid(row=5, column=0)
+reflect_axis_entry = Entry(controls_frame)
 reflect_axis_entry.grid(row=5, column=1)
-Button(root, text="Reflect", command=reflect).grid(row=5, column=4)
+Button(controls_frame, text="Reflect", command=reflect).grid(row=5, column=4)
 
 # Shear Controls
-Label(root, text="Shear X").grid(row=6, column=0)
-shear_x_slider = Scale(root, from_=-1.0, to=1.0, orient=HORIZONTAL, resolution=0.1)
+Label(controls_frame, text="Shear X").grid(row=6, column=0)
+shear_x_slider = Scale(controls_frame, from_=-1.0, to=1.0, orient=HORIZONTAL, resolution=0.1)
 shear_x_slider.grid(row=6, column=1)
 
-Label(root, text="Shear Y").grid(row=6, column=2)
-shear_y_slider = Scale(root, from_=-1.0, to=1.0, orient=HORIZONTAL, resolution=0.1)
+Label(controls_frame, text="Shear Y").grid(row=6, column=2)
+shear_y_slider = Scale(controls_frame, from_=-1.0, to=1.0, orient=HORIZONTAL, resolution=0.1)
 shear_y_slider.grid(row=6, column=3)
 
-Button(root, text="Shear", command=shear).grid(row=6, column=4)
+Button(controls_frame, text="Shear", command=shear).grid(row=6, column=4)
 
 # Clip Controls
-Label(root, text="Clip X Min").grid(row=7, column=0)
-clip_x_min_entry = Entry(root)
+Label(controls_frame, text="Clip X Min").grid(row=7, column=0)
+clip_x_min_entry = Entry(controls_frame)
 clip_x_min_entry.grid(row=7, column=1)
 
-Label(root, text="Clip Y Min").grid(row=7, column=2)
-clip_y_min_entry = Entry(root)
+Label(controls_frame, text="Clip Y Min").grid(row=7, column=2)
+clip_y_min_entry = Entry(controls_frame)
 clip_y_min_entry.grid(row=7, column=3)
 
-Label(root, text="Clip X Max").grid(row=8, column=0)
-clip_x_max_entry = Entry(root)
+Label(controls_frame, text="Clip X Max").grid(row=8, column=0)
+clip_x_max_entry = Entry(controls_frame)
 clip_x_max_entry.grid(row=8, column=1)
 
-Label(root, text="Clip Y Max").grid(row=8, column=2)
-clip_y_max_entry = Entry(root)
+Label(controls_frame, text="Clip Y Max").grid(row=8, column=2)
+clip_y_max_entry = Entry(controls_frame)
 clip_y_max_entry.grid(row=8, column=3)
 
-Button(root, text="Clip", command=clip).grid(row=8, column=4)
+Button(controls_frame, text="Clip", command=clip).grid(row=8, column=4)
 
+# Flood Fill Controls
+Label(controls_frame, text="Flood Fill - X Min").grid(row=9, column=0)
+flood_fill_xmin_entry = Entry(controls_frame)
+flood_fill_xmin_entry.grid(row=9, column=1)
+
+Label(controls_frame, text="Flood Fill - Y Min").grid(row=9, column=2)
+flood_fill_ymin_entry = Entry(controls_frame)
+flood_fill_ymin_entry.grid(row=9, column=3)
+
+Label(controls_frame, text="Flood Fill - X Max").grid(row=10, column=0)
+flood_fill_xmax_entry = Entry(controls_frame)
+flood_fill_xmax_entry.grid(row=10, column=1)
+
+Label(controls_frame, text="Flood Fill - Y Max").grid(row=10, column=2)
+flood_fill_ymax_entry = Entry(controls_frame)
+flood_fill_ymax_entry.grid(row=10, column=3)
+
+Label(controls_frame, text="Fill Color (R,G,B)").grid(row=11, column=0)
+flood_fill_color_entry = Entry(controls_frame)
+flood_fill_color_entry.grid(row=11, column=1)
+
+Button(controls_frame, text="Flood Fill", command=flood_fill).grid(row=11, column=4)
+
+# Run the application
 root.mainloop()
